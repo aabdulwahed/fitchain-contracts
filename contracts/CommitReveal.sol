@@ -65,7 +65,7 @@ contract CommitReveal {
     }
 
     function setup(bytes32 _commitmentId, uint256 _commitTimeout, uint256 _revealTimeout, address[] _voters) public onlyCommitmentNotExist(_commitmentId) returns(bool){
-        require(_commitTimeout >= 20 && _revealTimeout >= 20, 'Indicating invalid commit timeout');
+        require(_commitTimeout >= 20 && _revealTimeout >= 20, 'Indicating invalid commit timeouts');
         settings[_commitmentId] = Setting(true, _commitTimeout + block.timestamp, _commitTimeout + _revealTimeout + block.timestamp, msg.sender, _voters);
         commitmentsCount[_commitmentId] = 0;
         emit CommitmentInitialized(_commitmentId, _commitTimeout + block.timestamp,  _commitTimeout + _revealTimeout + block.timestamp, _voters);
@@ -82,7 +82,7 @@ contract CommitReveal {
 
     function reveal(bytes32 _commitmentId, string _value, bool _vote) public onlyCommitmentVoters(_commitmentId) returns(bool){
         if(settings[_commitmentId].revealTimeout >= block.timestamp) emit CommitmentTimedout(_commitmentId);
-        require(commitments[_commitmentId][msg.sender].exist, 'Commitment is not exist!');
+        require(commitments[_commitmentId][msg.sender].exist, 'Commitment does not exist!');
         require(!commitments[_commitmentId][msg.sender].isRevealed, 'Indicating replay attack');
         require(settings[_commitmentId].revealTimeout > block.timestamp && settings[_commitmentId].commitTimeout < block.timestamp, 'invalid reveal timing!');
         require(commitments[_commitmentId][msg.sender].hash == keccak256(abi.encodePacked(_vote, _value)), 'invalid commitment preimage');
@@ -150,5 +150,9 @@ contract CommitReveal {
 
     function canReveal(bytes32 _commitmentId) public view returns(bool) {
         return (settings[_commitmentId].commitTimeout <= block.timestamp);
+    }
+    function getCommitRevealResult(bytes32 _commitmentId) public view returns(address[], int8) {
+        if(results[_commitmentId].state) return (results[_commitmentId].losers, 1);
+        return (results[_commitmentId].losers, 0);
     }
 }
